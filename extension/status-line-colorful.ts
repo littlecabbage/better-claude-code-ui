@@ -37,7 +37,8 @@ interface AssistantUsage {
 
 function formatTokens(n: number): string {
 	if (n < 1000) return `${n}`;
-	return `${(n / 1000).toFixed(1)}k`;
+	if (n < 1000000) return `${(n / 1000).toFixed(1)}k`;
+	return `${(n / 1000000).toFixed(1)}M`;
 }
 
 function formatDuration(ms: number): string {
@@ -73,7 +74,9 @@ function justifyLine(left: string, right: string, width: number): string {
 	const leftWidth = visibleWidth(left);
 	const rightWidth = visibleWidth(right);
 	const padding = Math.max(0, width - leftWidth - rightWidth);
-	return left + " ".repeat(padding) + right;
+	const line = left + " ".repeat(padding) + right;
+	// 截断超长行以避免 TUI 渲染错误
+	return truncateToWidth(line, width, "");
 }
 
 export function registerColorfulStatusLine(pi: ExtensionAPI): void {
@@ -225,20 +228,21 @@ export function registerColorfulStatusLine(pi: ExtensionAPI): void {
 					
 					const left1 = leftParts1.join(theme.fg("dim", " · "));
 					
-					// 右侧：上下文使用进度条
+					// 右侧：上下文使用进度条 + 窗口大小
 					let right1 = "";
-					if (tokens > 0) {
+					if (tokens > 0 || window > 0) {
 						const barWidth = Math.min(20, Math.floor(width / 4));
 						const bar = drawContextBar(pct, barWidth);
+						const windowSize = window > 0 ? formatTokens(window) : "--";
 						let ctxDisplay = "";
 						if (critical) {
-							ctxDisplay = theme.fg("error", `⚠ ${bar} ${pct}%`);
+							ctxDisplay = theme.fg("error", `⚠ ${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
 						} else if (warn) {
-							ctxDisplay = theme.fg("warning", `${bar} ${pct}%`);
+							ctxDisplay = theme.fg("warning", `${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
 						} else if (pct > 50) {
-							ctxDisplay = theme.fg("text", `${bar} ${pct}%`);
+							ctxDisplay = theme.fg("text", `${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
 						} else {
-							ctxDisplay = theme.fg("success", `✓ ${bar} ${pct}%`);
+							ctxDisplay = theme.fg("success", `✓ ${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
 						}
 						right1 = ctxDisplay;
 					}
