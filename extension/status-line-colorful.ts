@@ -37,8 +37,8 @@ interface AssistantUsage {
 
 function formatTokens(n: number): string {
 	if (n < 1000) return `${n}`;
-	if (n < 1000000) return `${(n / 1000).toFixed(1)}k`;
-	return `${(n / 1000000).toFixed(1)}M`;
+	if (n < 1000000) return `${Math.round(n / 1000)}k`;
+	return `${Math.round(n / 1000000)}M`;
 }
 
 function formatDuration(ms: number): string {
@@ -228,21 +228,22 @@ export function registerColorfulStatusLine(pi: ExtensionAPI): void {
 					
 					const left1 = leftParts1.join(theme.fg("dim", " · "));
 					
-					// 右侧：上下文使用进度条 + 窗口大小
+					// 右侧：上下文使用进度条 + 已用 · 总量
 					let right1 = "";
 					if (tokens > 0 || window > 0) {
 						const barWidth = Math.min(20, Math.floor(width / 4));
 						const bar = drawContextBar(pct, barWidth);
+						const usedTokens = tokens > 0 ? formatTokens(tokens) : "0";
 						const windowSize = window > 0 ? formatTokens(window) : "--";
 						let ctxDisplay = "";
 						if (critical) {
-							ctxDisplay = theme.fg("error", `⚠ ${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
+							ctxDisplay = theme.fg("error", `⚠ ${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("text", usedTokens) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
 						} else if (warn) {
-							ctxDisplay = theme.fg("warning", `${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
+							ctxDisplay = theme.fg("warning", `${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("text", usedTokens) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
 						} else if (pct > 50) {
-							ctxDisplay = theme.fg("text", `${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
+							ctxDisplay = theme.fg("text", `${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("text", usedTokens) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
 						} else {
-							ctxDisplay = theme.fg("success", `✓ ${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
+							ctxDisplay = theme.fg("success", `✓ ${bar} ${pct}%`) + theme.fg("dim", " · ") + theme.fg("text", usedTokens) + theme.fg("dim", " · ") + theme.fg("muted", windowSize);
 						}
 						right1 = ctxDisplay;
 					}
