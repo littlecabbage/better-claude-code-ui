@@ -20,7 +20,10 @@ test("扩展加载：session_start 后 footer / header / 命令 / markdown trans
 	assert.equal(typeof pi.ui.footerFactory, "function", "setFooter called");
 	assert.equal(typeof pi.ui.headerFactory, "function", "setHeader called");
 	assert.ok(pi.commands.size >= 1, "at least one command");
-	assert.equal(pi.markdownTransformers.length, 2, "thinking + assistant markdown transformers");
+	assert.equal(pi.markdownTransformers.length, 1, "one composed transformer (pi keeps one per extension)");
+	const t = pi.markdownTransformers[0] as (md: string, ctx: { messageType: string }) => string;
+	assert.equal(t("secret thoughts", { messageType: "assistant-thinking" }), "", "thinking collapse survives");
+	assert.equal(t("### x", { messageType: "assistant" }), "## x", "assistant markdown rewrite active");
 });
 
 test("read 工具：renderCall + renderResult 不炸且产出 CC 文案", async () => {

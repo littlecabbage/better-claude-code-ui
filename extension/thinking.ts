@@ -34,6 +34,7 @@
  * belongs to spinner.ts.
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { addMarkdownTransformer } from "./markdown-transformers.js";
 import { dim, italic } from "./palette.js";
 
 const THINKING_TITLE = "∴ Thinking…";
@@ -50,7 +51,7 @@ export function isThinkingExpanded(): boolean {
 
 export function registerThinking(pi: ExtensionAPI): void {
 	// --- 1. The collapse itself: empty while collapsed, titled body expanded --
-	pi.registerMarkdownTransformer((markdown, { messageType }) => {
+	addMarkdownTransformer(pi, (markdown, { messageType }) => {
 		if (messageType !== "assistant-thinking") return markdown;
 		if (!thinkingExpanded) return "";
 		const body = markdown.trim();

@@ -294,7 +294,9 @@ export class FakePi {
 		this.messageRenderers.set(customType, renderer);
 	}
 	registerMarkdownTransformer(transformer: any): void {
-		this.markdownTransformers.push(transformer);
+		// pi keeps ONE transformer per extension (loader.js: extension.markdownTransformer = t);
+		// a later call replaces the earlier one. Mirror that so overwrites show up in tests.
+		this.markdownTransformers = [transformer];
 	}
 	registerEntryRenderer(customType: string, renderer: any): void {
 		this.entryRenderers.set(customType, renderer);

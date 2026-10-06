@@ -24,6 +24,7 @@
  * bar, H1 italic, `text (url)` links, plain-text user messages.
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { addMarkdownTransformer } from "./markdown-transformers.js";
 import { installMarkdownRender, isMarkdownRenderPatched, noteMarkdownMessageType, wrapPlainText } from "./markdown-render.js";
 
 /** Optional blockquote prefix (`> `, `> > `) a block construct may sit behind. */
@@ -113,7 +114,7 @@ export function ccMarkdown(markdown: string): string {
 
 export function registerMarkdown(pi: ExtensionAPI): void {
 	installMarkdownRender();
-	pi.registerMarkdownTransformer((markdown, { messageType }) => {
+	addMarkdownTransformer(pi, (markdown, { messageType }) => {
 		// Runs inside Markdown.render: tells the render patch whose text this is.
 		noteMarkdownMessageType(messageType);
 		if (messageType === "assistant") return ccMarkdown(markdown);
