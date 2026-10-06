@@ -17,6 +17,7 @@ import { bustGroupingSettingsCache, repaintGroupedRows } from "./tools/grouping.
 const SETTINGS_KEY_GROUP = "groupToolCalls";
 const SETTINGS_KEY_EXTRA_DETAIL = "ccToolsExtraDetail";
 const SETTINGS_KEY_CC_THEME = "ccTheme";
+const SETTINGS_KEY_STATUSLINE_STYLE = "ccStatusLineStyle";
 
 // Old-ext settings cache (index.ts:121-143): merged cwd + home settings, 5s TTL.
 let settingsCache: { value: Record<string, unknown>; timestamp: number } | null = null;
@@ -70,6 +71,7 @@ function writeSettingsKey(key: string, value: unknown): void {
 // Initial state from settings: grouping defaults on, extra detail defaults off.
 let groupingEnabled = readSettings()[SETTINGS_KEY_GROUP] !== false;
 let extraDetail = readSettings()[SETTINGS_KEY_EXTRA_DETAIL] === true;
+let statusLineStyle: "default" | "colorful" = (readSettings()[SETTINGS_KEY_STATUSLINE_STYLE] as "default" | "colorful") ?? "default";
 
 export function isGroupingEnabled(): boolean {
 	return groupingEnabled;
@@ -77,6 +79,10 @@ export function isGroupingEnabled(): boolean {
 
 export function isExtraDetail(): boolean {
 	return extraDetail;
+}
+
+export function getStatusLineStyle(): "default" | "colorful" {
+	return statusLineStyle;
 }
 
 export function registerCommands(pi: ExtensionAPI): void {
@@ -223,6 +229,35 @@ export function registerCommands(pi: ExtensionAPI): void {
 		async handler(_args, ctx) {
 			if (!ctx.hasUI) return;
 			ctx.ui.notify("Spinner: CC frames (· ✢ ✳ ✶ ✻ ✽), 120ms, ~190 fun verbs", "info");
+		},
+	});
+
+	// /cc-statusline — switch between default and colorful status line styles.
+	pi.registerCommand("cc-statusline", {
+		description: "Switch status line style (default | colorful)",
+		async handler(args, ctx) {
+			if (!ctx.hasUI) return;
+			const style = args.trim().toLowerCase();
+			if (style === "default" || style === "colorful") {
+				statusLineStyle = style;
+				writeSettingsKey(SETTINGS_KEY_STATUSLINE_STYLE, style);
+				ctx.ui.notify(
+					`Status line style: ${style}. Restart the session to apply.`,
+					"info",
+				);
+			} else if (style === "toggle" || style === "") {
+				statusLineStyle = statusLineStyle === "default" ? "colorful" : "default";
+				writeSettingsKey(SETTINGS_KEY_STATUSLINE_STYLE, statusLineStyle);
+				ctx.ui.notify(
+					`Status line style: ${statusLineStyle}. Restart the session to apply.`,
+					"info",
+				);
+			} else {
+				ctx.ui.notify(
+					`Current: ${statusLineStyle}. Usage: /cc-statusline [default|colorful|toggle]`,
+					"info",
+				);
+			}
 		},
 	});
 

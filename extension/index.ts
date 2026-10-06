@@ -19,6 +19,8 @@ import { registerSpinner } from "./spinner.js";
 import { registerTurnFooter } from "./turn-footer.js";
 import { registerBanner } from "./banner.js";
 import { registerStatusLine } from "./status-line.js";
+import { registerColorfulStatusLine } from "./status-line-colorful.js";
+import { getStatusLineStyle } from "./commands.js";
 import { registerGrouping } from "./tools/grouping.js";
 import { registerBuiltins } from "./tools/builtins.js";
 import { registerCommands } from "./commands.js";
@@ -35,7 +37,13 @@ export default function (pi: ExtensionAPI) {
 	registerSpinner(pi);
 	registerTurnFooter(pi);
 	registerBanner(pi);
-	registerStatusLine(pi);
+	// Register status line based on user preference
+	const statusLineStyle = getStatusLineStyle();
+	if (statusLineStyle === "colorful") {
+		registerColorfulStatusLine(pi);
+	} else {
+		registerStatusLine(pi);
+	}
 	registerPromptPointer(pi);
 	registerStickyPrompt(pi);
 
