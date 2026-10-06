@@ -6,15 +6,19 @@
 
 ## 安装
 
+本仓库 fork 自 [Demo-0416/my-pi-extensions](https://github.com/Demo-0416/my-pi-extensions/tree/master/better-claude-code-ui)，请通过本仓库的 git 源安装：
+
 ```bash
-pi install npm:better-claude-code-ui
+pi install git:github.com/littlecabbage/better-claude-code-ui
 ```
 
 免安装直接体验：
 
 ```bash
-pi -e npm:better-claude-code-ui
+pi -e git:github.com/littlecabbage/better-claude-code-ui
 ```
+
+> `npm:better-claude-code-ui` 是上游作者 Demo-0416 发布的 npm 包，不包含本 fork 的改动（例如 colorful 状态栏）。
 
 ### 推荐设置
 
@@ -37,7 +41,9 @@ pi -e npm:better-claude-code-ui
 **UI 模块**：
 
 - **欢迎横幅（Welcome banner）** — 启动时展示 CC 风格精简 Logo；检测到新版本或在项目中首次运行时显示边框盒式横幅
-- **状态栏（Status line）** — 模型、工作目录 cwd（支持 `~` 缩写）、Git 分支
+- **状态栏（Status line）** — 两种样式：
+  - `default`：单行暗色，显示模型、工作目录 cwd（支持 `~` 缩写）、Git 分支、上下文占比、成本、会话时长
+  - `colorful`：三行布局，铺满终端宽度：供应商、模型、thinking 等级、上下文进度条（百分比、已用 token、窗口大小）、cwd、Git 分支、最近一次请求的 TTFT、解码速度、吞吐、成本、会话时长、轮次、缓存命中率
 - **加载微标（Spinner）** — CC 经典动词轮换动画，带副标题信息：已耗时、Token 统计、`esc to interrupt`
 - **回合尾注（Turn footer）** — 单次请求的成本与耗时概览，对齐 CC v2.1.234 行为
 - **工具渲染（Tool rendering）** — CC 风格工具调用行（无背景色边框），支持连续调用合并折叠与 `⎿` 分支引导线，忠实还原 CC 规范的代码 Diff 渲染与语法高亮（基于 shiki）
@@ -49,6 +55,7 @@ pi -e npm:better-claude-code-ui
 - `/cc-theme` — 主题选择器（仅限 CC 主题）
 - `/cc-tools` — 切换 CC 风格工具渲染选项
 - `/cc-spinner` — 加载动画微标选项
+- `/cc-statusline [default|colorful|toggle]` — 切换状态栏样式。选择会保存到 `~/.pi/settings.json`（`ccStatusLineStyle`），执行 `/reload` 或重启 pi 后生效
 
 ## 运行要求
 
