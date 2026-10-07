@@ -43,7 +43,18 @@ pi -e git:github.com/littlecabbage/better-claude-code-ui
 - **欢迎横幅（Welcome banner）** — 启动时展示 CC 风格精简 Logo；检测到新版本或在项目中首次运行时显示边框盒式横幅
 - **状态栏（Status line）** — 两种样式：
   - `default`：单行暗色，显示模型、工作目录 cwd（支持 `~` 缩写）、Git 分支、上下文占比、成本、会话时长
-  - `colorful`：三行布局，铺满终端宽度：供应商、模型、thinking 等级、上下文进度条（百分比、已用 token、窗口大小）、cwd、Git 分支、最近一次请求的 TTFT、解码速度、吞吐、成本、会话时长、轮次、缓存命中率
+  - `colorful`：三行 `[Label]` 分区，分区之间等间距铺满终端宽度：
+
+    ```
+    🤖【xai】grok-4.7 (medium)            [Topic] 状态栏分区改版            [Context] ████░░░░░░░░ 36% · 91k · 256k
+    [Usage] $0.39 · 5m 5s · 1 turn            [Perf] TTFT 402ms · Gen 63.9t/s · E2E 45.6t/s            [Cache] 96%
+    [Workspace] ~/projects/app   [Git] main   [Platform] macOS 27.0.1 (arm64)   [System] CPU 14% · Mem 80% · Net ↓2K/s ↑6K/s
+    ```
+
+    - 第一行：供应商、模型、thinking 等级；对话主题（`/name` 设置的 session 名称，没有时取第一条用户消息）；上下文进度条、百分比、已用 token、窗口大小
+    - 第二行（本次对话）：会话成本、时长、轮次；最近一次请求的 TTFT、首 token 之后的生成速度（Gen）、端到端速度（E2E）；缓存命中率
+    - 第三行（运行环境）：工作目录、Git 分支、操作系统和架构；每 2 秒采样一次的 CPU、内存、网速。网速只统计物理网卡和无线网卡，Windows 上不显示
+    - 数值超过阈值会变黄或变红。终端较窄时先缩短主题，再依次去掉进度条和主题，过长的路径会被截断
 - **加载微标（Spinner）** — CC 经典动词轮换动画，带副标题信息：已耗时、Token 统计、`esc to interrupt`
 - **回合尾注（Turn footer）** — 单次请求的成本与耗时概览，对齐 CC v2.1.234 行为
 - **工具渲染（Tool rendering）** — CC 风格工具调用行（无背景色边框），支持连续调用合并折叠与 `⎿` 分支引导线，忠实还原 CC 规范的代码 Diff 渲染与语法高亮（基于 shiki）
