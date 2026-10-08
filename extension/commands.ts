@@ -18,6 +18,7 @@ const SETTINGS_KEY_GROUP = "groupToolCalls";
 const SETTINGS_KEY_EXTRA_DETAIL = "ccToolsExtraDetail";
 const SETTINGS_KEY_CC_THEME = "ccTheme";
 const SETTINGS_KEY_STATUSLINE_STYLE = "ccStatusLineStyle";
+const SETTINGS_KEY_BANNER = "ccBanner";
 
 // Old-ext settings cache (index.ts:121-143): merged cwd + home settings, 5s TTL.
 let settingsCache: { value: Record<string, unknown>; timestamp: number } | null = null;
@@ -72,6 +73,8 @@ function writeSettingsKey(key: string, value: unknown): void {
 let groupingEnabled = readSettings()[SETTINGS_KEY_GROUP] !== false;
 let extraDetail = readSettings()[SETTINGS_KEY_EXTRA_DETAIL] === true;
 let statusLineStyle: "default" | "colorful" = (readSettings()[SETTINGS_KEY_STATUSLINE_STYLE] as "default" | "colorful") ?? "default";
+// 开屏横幅：默认用 pi 内置启动标头；"cc" 才替换成本扩展的 CC 风格大 Logo
+let bannerStyle: "default" | "cc" = readSettings()[SETTINGS_KEY_BANNER] === "cc" ? "cc" : "default";
 
 export function isGroupingEnabled(): boolean {
 	return groupingEnabled;
@@ -83,6 +86,10 @@ export function isExtraDetail(): boolean {
 
 export function getStatusLineStyle(): "default" | "colorful" {
 	return statusLineStyle;
+}
+
+export function getBannerStyle(): "default" | "cc" {
+	return bannerStyle;
 }
 
 export function registerCommands(pi: ExtensionAPI): void {
@@ -257,6 +264,22 @@ export function registerCommands(pi: ExtensionAPI): void {
 					`Current: ${statusLineStyle}. Usage: /cc-statusline [default|colorful|toggle]`,
 					"info",
 				);
+			}
+		},
+	});
+
+	// /cc-banner — 开屏横幅：default = pi 内置启动标头，cc = 本扩展的 CC 风格 Logo
+	pi.registerCommand("cc-banner", {
+		description: "Switch startup banner (default | cc)",
+		async handler(args, ctx) {
+			if (!ctx.hasUI) return;
+			const arg = args.trim().toLowerCase();
+			if (arg === "default" || arg === "cc" || arg === "toggle") {
+				bannerStyle = arg === "toggle" ? (bannerStyle === "cc" ? "default" : "cc") : arg;
+				writeSettingsKey(SETTINGS_KEY_BANNER, bannerStyle);
+				ctx.ui.notify(`Startup banner: ${bannerStyle}. Run /reload or restart pi to apply.`, "info");
+			} else {
+				ctx.ui.notify(`Current: ${bannerStyle}. Usage: /cc-banner [default|cc|toggle]`, "info");
 			}
 		},
 	});

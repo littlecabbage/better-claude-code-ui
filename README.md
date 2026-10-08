@@ -20,18 +20,19 @@ pi -e git:github.com/littlecabbage/better-claude-code-ui
 
 > `npm:better-claude-code-ui` is the upstream package published by Demo-0416. It does not include this fork's changes, such as the colorful status line.
 
-### Recommended setting
+### Startup banner
 
-This extension draws its own welcome banner, so pi's built-in startup header
-becomes redundant. Hide it in `~/.pi/agent/settings.json`:
+By default this extension keeps pi's built-in startup header and the loaded-resource listing
+(`[Context]`, `[Skills]`, `[Extensions]` …). Run `/cc-banner cc` to replace it with the
+Claude Code style logo: a boxed two-column banner (extensions + skills) the first time you open a
+project or after a pi upgrade, and a condensed logo afterwards. When using the CC banner, pi's own
+header becomes redundant; hide it in `~/.pi/agent/settings.json`:
 
 ```json
 { "quietStartup": true }
 ```
 
-The full two-column banner (extensions + skills) appears the first time you
-open a given project, matching CC's `showOnboarding` behavior; later starts in
-that project use the condensed logo.
+To keep pi's header but hide only the resource listing, use `"quietStartup": "header"`.
 
 ## What you get
 
@@ -43,7 +44,7 @@ that project use the condensed logo.
 
 **UI modules**:
 
-- **Welcome banner** — CC's condensed logo on startup, boxed banner for new versions / first run in a project
+- **Welcome banner** (opt-in, `/cc-banner cc`) — CC's condensed logo on startup, boxed banner for new versions / first run in a project
 - **Status line** — two styles:
   - `default`: one dim line with model, cwd (with `~` shortening), git branch, context %, cost, and session time
   - `colorful`: three rows on a shared three-column grid, so sections line up vertically and the spare space is spread between columns:
@@ -71,6 +72,7 @@ that project use the condensed logo.
 - `/cc-theme` — theme picker (CC themes only)
 - `/cc-tools` — toggle CC-style tool rendering options
 - `/cc-spinner` — spinner options
+- `/cc-banner [default|cc|toggle]` — switch the startup banner between pi's built-in header (`default`) and the CC logo (`cc`). Saved to `~/.pi/settings.json` (`ccBanner`); applies after `/reload` or restarting pi
 - `/cc-statusline [default|colorful|toggle]` — switch the status line style. The choice is saved to `~/.pi/settings.json` (`ccStatusLineStyle`) and applies after `/reload` or restarting pi
 
 ## Requirements

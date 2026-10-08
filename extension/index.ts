@@ -20,7 +20,7 @@ import { registerTurnFooter } from "./turn-footer.js";
 import { registerBanner } from "./banner.js";
 import { registerStatusLine } from "./status-line.js";
 import { registerColorfulStatusLine } from "./status-line-colorful.js";
-import { getStatusLineStyle } from "./commands.js";
+import { getBannerStyle, getStatusLineStyle } from "./commands.js";
 import { registerGrouping } from "./tools/grouping.js";
 import { registerBuiltins } from "./tools/builtins.js";
 import { registerCommands } from "./commands.js";
@@ -36,7 +36,8 @@ export default function (pi: ExtensionAPI) {
 	// Layer 2: chrome
 	registerSpinner(pi);
 	registerTurnFooter(pi);
-	registerBanner(pi);
+	// 开屏横幅默认保留 pi 内置标头；/cc-banner cc 才换成 CC 风格 Logo
+	if (getBannerStyle() === "cc") registerBanner(pi);
 	// Register status line based on user preference
 	const statusLineStyle = getStatusLineStyle();
 	if (statusLineStyle === "colorful") {

@@ -20,15 +20,15 @@ pi -e git:github.com/littlecabbage/better-claude-code-ui
 
 > `npm:better-claude-code-ui` 是上游作者 Demo-0416 发布的 npm 包，不包含本 fork 的改动（例如 colorful 状态栏）。
 
-### 推荐设置
+### 开屏横幅
 
-本扩展自带欢迎横幅，因此 pi 内置的启动标头会显得多余。建议在 `~/.pi/agent/settings.json` 中将其隐藏：
+默认保留 pi 内置的启动标头和已加载资源列表（`[Context]`、`[Skills]`、`[Extensions]` 等）。执行 `/cc-banner cc` 可换成 Claude Code 风格的 Logo：首次在某个项目中打开或 pi 升级后显示带边框的双栏横幅（扩展列表 + Skills），之后显示精简 Logo。使用 CC 横幅时，pi 自带的标头就重复了，可以在 `~/.pi/agent/settings.json` 中隐藏：
 
 ```json
 { "quietStartup": true }
 ```
 
-首次在某个项目中打开时会展示完整的双栏横幅（扩展列表 + Skills），对齐 CC 的 `showOnboarding` 行为；后续在该项目中启动则使用精简版 Logo。
+如果想保留 pi 的标头、只隐藏资源列表，用 `"quietStartup": "header"`。
 
 ## 功能特性
 
@@ -40,7 +40,7 @@ pi -e git:github.com/littlecabbage/better-claude-code-ui
 
 **UI 模块**：
 
-- **欢迎横幅（Welcome banner）** — 启动时展示 CC 风格精简 Logo；检测到新版本或在项目中首次运行时显示边框盒式横幅
+- **欢迎横幅（Welcome banner）**（需手动开启：`/cc-banner cc`）— 启动时展示 CC 风格精简 Logo；检测到新版本或在项目中首次运行时显示边框盒式横幅
 - **状态栏（Status line）** — 两种样式：
   - `default`：单行暗色，显示模型、工作目录 cwd（支持 `~` 缩写）、Git 分支、上下文占比、成本、会话时长
   - `colorful`：三行共用一套三列网格，各分区上下对齐，多余空间平均分到列间距：
@@ -68,6 +68,7 @@ pi -e git:github.com/littlecabbage/better-claude-code-ui
 - `/cc-theme` — 主题选择器（仅限 CC 主题）
 - `/cc-tools` — 切换 CC 风格工具渲染选项
 - `/cc-spinner` — 加载动画微标选项
+- `/cc-banner [default|cc|toggle]` — 切换开屏横幅：`default` 为 pi 内置启动标头，`cc` 为 CC 风格 Logo。选择保存到 `~/.pi/settings.json`（`ccBanner`），执行 `/reload` 或重启 pi 后生效
 - `/cc-statusline [default|colorful|toggle]` — 切换状态栏样式。选择会保存到 `~/.pi/settings.json`（`ccStatusLineStyle`），执行 `/reload` 或重启 pi 后生效
 
 ## 运行要求

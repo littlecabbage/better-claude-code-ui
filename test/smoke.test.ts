@@ -14,11 +14,10 @@ test("扩展加载：7 个内置工具全部注册", async () => {
 	}
 });
 
-test("扩展加载：session_start 后 footer / header / 命令 / markdown transformer 就位", async () => {
+test("扩展加载：session_start 后 footer / 命令 / markdown transformer 就位", async () => {
 	const pi = await loadExtension();
 	await startSession(pi);
 	assert.equal(typeof pi.ui.footerFactory, "function", "setFooter called");
-	assert.equal(typeof pi.ui.headerFactory, "function", "setHeader called");
 	assert.ok(pi.commands.size >= 1, "at least one command");
 	assert.equal(pi.markdownTransformers.length, 1, "one composed transformer (pi keeps one per extension)");
 	const t = pi.markdownTransformers[0] as (md: string, ctx: { messageType: string }) => string;
