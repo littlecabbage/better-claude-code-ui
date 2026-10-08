@@ -11,7 +11,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { FakePi, FakeTheme } from "./harness.js";
 import { registerColorfulStatusLine } from "../extension/status-line-colorful.js";
-import { parseMeminfo, parseNetstat, parseProcNetDev, parseVmStat, formatRate, cpuPercent } from "../extension/sys-monitor.js";
+import { SysMonitor, parseMeminfo, parseNetstat, parseProcNetDev, parseVmStat, formatRate, cpuPercent } from "../extension/sys-monitor.js";
 import { stripTerminalSequences, visibleWidth } from "@earendil-works/pi-tui";
 
 async function renderFooter(opts: { name?: string; firstUser?: string; tokens?: number; window?: number; width?: number; waitMs?: number; modelId?: string; provider?: string; branch?: string; cwd?: string }) {
@@ -59,7 +59,7 @@ test("第二行是本次对话指标，第三行是运行环境（路径 → Git
 	const order = ["[Workspace]", "[Git] main", "[Platform]", "[System]"].map((s) => lines[2]!.indexOf(s));
 	assert.ok(order.every((i, k) => i >= 0 && (k === 0 || i > order[k - 1]!)), `第三行顺序不对: ${lines[2]}`);
 	assert.match(lines[2]!, /\[Platform\] \S.* \((arm64|x64|ia32|arm)\)/);
-	assert.match(lines[2]!, /\[System\] CPU (\d+%|--) · Mem \d+%/);
+	assert.match(lines[2]!, /\[System\] CPU +(\d+%|--) · Mem +\d+%/);
 });
 
 test("上下文超过 100% 不抛错，窄终端每行不超宽", async () => {
@@ -157,4 +157,55 @@ test("各模块有最长宽度：超长模型 / 会话名 / 分支 / 路径都�
 	assert.ok(visibleWidth(seg(lines[2]!, "[Workspace]", "[Git]")) <= 40, lines[2]);
 	assert.ok(visibleWidth(seg(lines[2]!, "[Git]", "[Platform]")) <= 6 + 20, lines[2]);
 	for (const l of lines) assert.ok(!l.includes("🤖") && !l.includes("【"), `不应再有 emoji / 中文括号: ${l}`);
+});
+
+test("实时值变化（网速 / CPU / 内存位数不同）不会让各列左右跳动", async () => {
+	// 截获 footer 内部的 SysMonitor，手动喂数据；不启动真实采样
+	let monitor: SysMonitor | undefined;
+	const origStart = SysMonitor.prototype.start;
+	SysMonitor.prototype.start = function (this: SysMonitor) {
+		monitor = this;
+	};
+	try {
+		const pi = new FakePi();
+		pi.sessionName = "稳定性";
+		pi.model = { id: "grok-4.7", provider: "xai", contextWindow: 256000 };
+		pi.sessionManager = { ...pi.sessionManager, getBranch: () => [] } as any;
+		const base = pi.ctx.bind(pi);
+		pi.ctx = () => ({ ...base(), getContextUsage: () => ({ tokens: 91234 }) });
+		registerColorfulStatusLine(pi as any);
+		await pi.emit("session_start", { reason: "startup" });
+		const footer = (pi.ui as any).footerFactory({ requestRender() {} }, new FakeTheme(), {
+			onBranchChange: () => () => {},
+			getGitBranch: () => "main",
+		});
+		assert.ok(monitor, "应截获到 SysMonitor");
+
+		const samples = [
+			{},
+			{ cpuPct: 3, memPct: 9, rxRate: 0, txRate: 12 },
+			{ cpuPct: 100, memPct: 100, rxRate: 900 * 1024 * 1024, txRate: 54 },
+			{ cpuPct: 47, memPct: 81, rxRate: 1023, txRate: 5.5 * 1024 * 1024 },
+			{ cpuPct: 8, memPct: 55, rxRate: 3 * 1024, txRate: 0 },
+		];
+		const positions = (width: number) =>
+			samples.map((stats) => {
+				monitor!.stats = stats;
+				const lines = (footer.render(width) as string[]).map(stripTerminalSequences);
+				const at = (line: string, marker: string) => visibleWidth(line.slice(0, line.indexOf(marker)));
+				return JSON.stringify({
+					c2: [at(lines[0]!, "[Topic]"), at(lines[1]!, "[Perf]"), at(lines[2]!, "[Git]")],
+					c3: [at(lines[0]!, "[Context]"), at(lines[1]!, "[Cache]"), at(lines[2]!, "[System]")],
+					net: at(lines[2]!, "Net "),
+					len: visibleWidth(lines[2]!),
+				});
+			});
+		for (const width of [180, 140]) {
+			const ps = positions(width);
+			assert.equal(new Set(ps).size, 1, `width ${width} 布局随实时值变化:\n${ps.join("\n")}`);
+		}
+		footer.dispose();
+	} finally {
+		SysMonitor.prototype.start = origStart;
+	}
 });

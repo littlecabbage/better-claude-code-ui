@@ -135,10 +135,14 @@ export function parseProcNetDev(text: string): { rx: number; tx: number } | unde
 	return found ? { rx, tx } : undefined;
 }
 
+/** 最长 7 列（如 `1024K/s`、`12.3M/s` → ≥ 10M 时取整 `123M/s`），配合 padStart 做等宽显示。 */
 export function formatRate(bytesPerSec: number): string {
 	if (bytesPerSec < 1024) return `${Math.round(bytesPerSec)}B/s`;
 	if (bytesPerSec < 1024 * 1024) return `${Math.round(bytesPerSec / 1024)}K/s`;
-	if (bytesPerSec < 1024 * 1024 * 1024) return `${(bytesPerSec / 1024 / 1024).toFixed(1)}M/s`;
+	if (bytesPerSec < 1024 * 1024 * 1024) {
+		const mb = bytesPerSec / 1024 / 1024;
+		return mb < 10 ? `${mb.toFixed(1)}M/s` : `${Math.round(mb)}M/s`;
+	}
 	return `${(bytesPerSec / 1024 / 1024 / 1024).toFixed(1)}G/s`;
 }
 
@@ -167,6 +171,8 @@ async function resolveOsLabel(): Promise<string> {
 
 export class SysMonitor {
 	stats: SysStats = {};
+	/** 当前平台能否采集网速（用于在首次采样前就预留占位，避免出现时布局跳动） */
+	readonly netSupported = process.platform === "darwin" || process.platform === "linux";
 	osLabel = basicOsLabel();
 	onUpdate: () => void = () => {};
 

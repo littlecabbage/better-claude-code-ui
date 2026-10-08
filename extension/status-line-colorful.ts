@@ -107,12 +107,29 @@ function clip(text: string, max: number): string {
  * - 放不下：按 shrinkOrder 依次把列缩到它的最小宽度（单元自己选更紧凑的变体），
  *   还不够就从最后一列开始硬截断
  */
-function gridLayout(rows: Cell[][], width: number, shrinkOrder: number[]): string[] {
+/**
+ * 列宽记忆：每列只增不减，终端宽度或列数变化时重置。
+ * 避免网速 / CPU / 时长等实时值的字符数变化导致列间距重新分配、整行左右跳动。
+ */
+interface GridMemo {
+	width: number;
+	natural: number[];
+}
+
+function gridLayout(rows: Cell[][], width: number, shrinkOrder: number[], memo?: GridMemo): string[] {
 	const cols = Math.max(...rows.map((r) => r.length));
 	const cell = (r: number, c: number): Cell => rows[r]![c] ?? (() => "");
 	const colWidth = (c: number, max: number) => Math.max(...rows.map((_, r) => visibleWidth(cell(r, c)(max))));
 
 	const widths = Array.from({ length: cols }, (_, c) => colWidth(c, NATURAL));
+	if (memo) {
+		if (memo.width !== width || memo.natural.length !== cols) {
+			memo.width = width;
+			memo.natural = [...widths];
+		} else {
+			for (let c = 0; c < cols; c++) widths[c] = memo.natural[c] = Math.max(memo.natural[c]!, widths[c]!);
+		}
+	}
 	const mins = Array.from({ length: cols }, (_, c) => Math.min(widths[c]!, colWidth(c, 0)));
 	const gapsTotal = MIN_GAP * (cols - 1);
 	let excess = widths.reduce((a, b) => a + b, 0) + gapsTotal - width;
@@ -282,6 +299,7 @@ export function registerColorfulStatusLine(pi: ExtensionAPI): void {
 			const unsub = footerData.onBranchChange(() => tui.requestRender());
 			// 每个 footer 实例一个采样器，dispose 时停止
 			const monitor = new SysMonitor();
+			const gridMemo: GridMemo = { width: -1, natural: [] };
 			monitor.onUpdate = () => tui.requestRender();
 			monitor.start();
 			requestRender = () => tui.requestRender();
@@ -381,14 +399,17 @@ export function registerColorfulStatusLine(pi: ExtensionAPI): void {
 					const detail = isExtraDetail() ? "   " + theme.fg("warning", "[Detail]") : "";
 					const cache = fixedCell(`${label("Cache")} ${cacheValue}${detail}`, `${label("Cache")} ${cacheValue}`);
 
+					// 实时值等宽右对齐：百分比 4 列（`  5%` / `100%`），网速 7 列（`  54B/s` / `12.3M/s`）
 					const sys = monitor.stats;
-					const cpu = theme.fg("dim", "CPU ") + (sys.cpuPct !== undefined ? theme.fg(pctColor(sys.cpuPct, 50, 80), `${Math.round(sys.cpuPct)}%`) : none);
-					const mem = theme.fg("dim", "Mem ") + (sys.memPct !== undefined ? theme.fg(pctColor(sys.memPct, 75, 90), `${Math.round(sys.memPct)}%`) : none);
+					const pct4 = (v: number | undefined, warnAt: number, errAt: number) =>
+						v !== undefined ? theme.fg(pctColor(v, warnAt, errAt), `${Math.round(v)}%`.padStart(4)) : theme.fg("dim", "--".padStart(4));
+					const rate7 = (v: number | undefined) => (v !== undefined ? formatRate(v) : "--").padStart(7);
+					const cpu = theme.fg("dim", "CPU ") + pct4(sys.cpuPct, 50, 80);
+					const mem = theme.fg("dim", "Mem ") + pct4(sys.memPct, 75, 90);
 					const sysHead = `${label("System")} ${cpu}${dot}${mem}`;
-					const net =
-						sys.rxRate !== undefined && sys.txRate !== undefined
-							? dot + theme.fg("dim", "Net ") + theme.fg("muted", `↓${formatRate(sys.rxRate)} ↑${formatRate(sys.txRate)}`)
-							: "";
+					const net = monitor.netSupported
+						? dot + theme.fg("dim", "Net ") + theme.fg("muted", `↓${rate7(sys.rxRate)} ↑${rate7(sys.txRate)}`)
+						: "";
 					const system = fixedCell(sysHead + net, sysHead);
 
 					// 三行共用列宽 → 上下对齐。放不下时先缩第二列（平台去版本号 / 去 E2E），
@@ -401,6 +422,7 @@ export function registerColorfulStatusLine(pi: ExtensionAPI): void {
 						],
 						width,
 						[1, 0, 2],
+						gridMemo,
 					);
 				},
 			};
